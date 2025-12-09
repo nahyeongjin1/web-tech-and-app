@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Web Calculator</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+      }
+
+      .calculator {
+        background: #2d2d2d;
+        border-radius: 20px;
+        padding: 25px;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+        width: 100%;
+        max-width: 700px;
+      }
+
+      header {
+        text-align: center;
+        color: #fff;
+        font-size: 24px;
+        font-weight: 600;
+        margin-bottom: 20px;
+      }
+
+      .display-section {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 15px;
+      }
+
+      #uploadButton {
+        background: #8b5cf6;
+        color: white;
+        border: none;
+        padding: 12px 20px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        transition: all 0.2s;
+      }
+
+      #uploadButton:hover {
+        background: #7c3aed;
+        transform: scale(1.02);
+      }
+
+      #display1 {
+        flex: 1;
+        background: #1a1a1a;
+        border: none;
+        border-radius: 10px;
+        padding: 15px;
+        font-size: 24px;
+        color: #fff;
+        text-align: right;
+        outline: none;
+      }
+
+      #fileInput {
+        display: none;
+      }
+
+      .main-section {
+        display: flex;
+        gap: 15px;
+      }
+
+      #keypad {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 8px;
+        flex: 1;
+      }
+
+      #keypad button {
+        background: #404040;
+        border: none;
+        border-radius: 10px;
+        padding: 18px;
+        font-size: 18px;
+        color: #fff;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+
+      #keypad button:hover {
+        background: #505050;
+        transform: scale(1.05);
+      }
+
+      #keypad button:active {
+        transform: scale(0.95);
+      }
+
+      #keypad button.operator {
+        background: #6366f1;
+      }
+
+      #keypad button.operator:hover {
+        background: #4f46e5;
+      }
+
+      #keypad button.function {
+        background: #374151;
+      }
+
+      #keypad button.function:hover {
+        background: #4b5563;
+      }
+
+      #keypad button.equals {
+        background: #10b981;
+        grid-column: span 2;
+      }
+
+      #keypad button.equals:hover {
+        background: #059669;
+      }
+
+      #keypad button.two-col {
+        grid-column: span 2;
+      }
+
+      #display2 {
+        width: 300px;
+        background: #1a1a1a;
+        border: none;
+        border-radius: 10px;
+        padding: 15px;
+        font-size: 14px;
+        color: #a0a0a0;
+        resize: none;
+        outline: none;
+        font-family: monospace;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="calculator">
+      <header>Web Calculator</header>
+
+      <div class="display-section">
+        <button type="button" id="uploadButton">Upload</button>
+        <input type="text" id="display1" placeholder="0" readonly />
+        <input type="file" id="fileInput" accept="image/*" />
+      </div>
+
+      <div class="main-section">
+        <div id="keypad">
+          <!-- Row 1 -->
+          <button type="button" class="function two-col" data-action="clear">
+            AC
+          </button>
+          <button type="button" class="function" data-action="recall">R</button>
+          <button
+            type="button"
+            class="function two-col"
+            data-action="backspace"
+          >
+            &larr;
+          </button>
+
+          <!-- Row 2 -->
+          <button type="button" data-value="7">7</button>
+          <button type="button" data-value="8">8</button>
+          <button type="button" data-value="9">9</button>
+          <button type="button" class="operator" data-value="(">(</button>
+          <button type="button" class="operator" data-value=")">)</button>
+
+          <!-- Row 3 -->
+          <button type="button" data-value="4">4</button>
+          <button type="button" data-value="5">5</button>
+          <button type="button" data-value="6">6</button>
+          <button type="button" class="operator" data-value="+">+</button>
+          <button type="button" class="operator" data-value="-">-</button>
+
+          <!-- Row 4 -->
+          <button type="button" data-value="1">1</button>
+          <button type="button" data-value="2">2</button>
+          <button type="button" data-value="3">3</button>
+          <button type="button" class="operator" data-value="*">*</button>
+          <button type="button" class="operator" data-value="/">/</button>
+
+          <!-- Row 5 -->
+          <button type="button" class="two-col" data-value="0">0</button>
+          <button type="button" data-value=".">.</button>
+          <button type="button" class="equals two-col" data-action="equals">
+            =
+          </button>
+        </div>
+
+        <textarea
+          id="display2"
+          readonly
+          placeholder="결과가 여기에 표시됩니다"
+        ></textarea>
+      </div>
+    </div>
+
+    <script>
+      const API_BASE = "http://localhost:8000";
+
+      const display1 = document.getElementById("display1");
+      const display2 = document.getElementById("display2");
+      const keypad = document.getElementById("keypad");
+      const uploadButton = document.getElementById("uploadButton");
+      const fileInput = document.getElementById("fileInput");
+
+      let currentExpression = "";
+
+      // 출력영역1 업데이트
+      function updateDisplay1() {
+        display1.value = currentExpression || "0";
+      }
+
+      // 출력영역2에 메시지 추가
+      function appendToDisplay2(message) {
+        if (display2.value) {
+          display2.value += "\n" + message;
+        } else {
+          display2.value = message;
+        }
+        display2.scrollTop = display2.scrollHeight;
+      }
+
+      // 키패드 클릭 이벤트
+      keypad.addEventListener("click", (e) => {
+        e.preventDefault();
+        const button = e.target.closest("button");
+        if (!button) return;
+
+        const value = button.dataset.value;
+        const action = button.dataset.action;
+
+        if (value) {
+          currentExpression += value;
+          updateDisplay1();
+        } else if (action) {
+          handleAction(action);
+        }
+      });
+
+      // 액션 처리
+      async function handleAction(action) {
+        switch (action) {
+          case "clear":
+            currentExpression = "";
+            updateDisplay1();
+            break;
+
+          case "backspace":
+            currentExpression = currentExpression.slice(0, -1);
+            updateDisplay1();
+            break;
+
+          case "equals":
+            if (currentExpression) {
+              await evaluateExpression();
+            }
+            break;
+
+          case "recall":
+            await recallExpression();
+            break;
+        }
+      }
+
+      // 수식 계산 (Backend API 호출)
+      async function evaluateExpression() {
+        try {
+          const response = await fetch(`${API_BASE}/eval/`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ expr: currentExpression }),
+          });
+
+          const data = await response.json();
+          const result = `${currentExpression}=${data.result}`;
+          appendToDisplay2(result);
+          currentExpression = "";
+          updateDisplay1();
+        } catch (error) {
+          appendToDisplay2(`Error: ${error.message}`);
+        }
+      }
+
+      // Recall 서비스 호출
+      async function recallExpression() {
+        try {
+          const recallValue = currentExpression || "all";
+
+          const response = await fetch(`${API_BASE}/mem/`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ recall: recallValue }),
+          });
+
+          const data = await response.json();
+
+          // 특정 ID 조회시 출력영역1에 표시
+          if (
+            recallValue.match(/^\d+$/) &&
+            data.expr.length === 1 &&
+            !data.expr[0].startsWith("No Such")
+          ) {
+            currentExpression = data.expr[0];
+            updateDisplay1();
+          } else {
+            // 그 외의 경우 출력영역2에 표시
+            if (recallValue === "all" || recallValue === "") {
+              appendToDisplay2("Memory:");
+            }
+            data.expr.forEach((expr) => appendToDisplay2(expr));
+          }
+
+          // Recall 후 입력 초기화 (삭제 명령이나 전체 조회인 경우)
+          if (
+            recallValue.startsWith("-") ||
+            recallValue === "all" ||
+            recallValue === ""
+          ) {
+            currentExpression = "";
+            updateDisplay1();
+          }
+        } catch (error) {
+          appendToDisplay2(`Error: ${error.message}`);
+        }
+      }
+
+      // 키보드 입력 처리
+      document.addEventListener("keydown", (e) => {
+        const key = e.key;
+
+        if (/^[0-9+\-*/.()]$/.test(key)) {
+          currentExpression += key;
+          updateDisplay1();
+        } else if (key === "Enter") {
+          e.preventDefault();
+          if (currentExpression) evaluateExpression();
+        } else if (key === "Backspace") {
+          currentExpression = currentExpression.slice(0, -1);
+          updateDisplay1();
+        } else if (key === "Escape") {
+          currentExpression = "";
+          updateDisplay1();
+        } else if (key.toLowerCase() === "r") {
+          e.preventDefault();
+          recallExpression();
+        }
+      });
+
+      // 이미지 업로드 버튼
+      uploadButton.addEventListener("click", () => {
+        fileInput.click();
+      });
+
+      // 파일 선택시 OCR 처리
+      fileInput.addEventListener("change", async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        try {
+          const formData = new FormData();
+          formData.append("file", file);
+
+          const response = await fetch(`${API_BASE}/ocr/`, {
+            method: "POST",
+            body: formData,
+          });
+
+          const data = await response.json();
+
+          if (data.error) {
+            appendToDisplay2(`Image File Error: ${data.error}`);
+          } else {
+            currentExpression = data.expr;
+            updateDisplay1();
+          }
+        } catch (error) {
+          appendToDisplay2(`Image File Error: ${error.message}`);
+        }
+
+        // 파일 입력 초기화
+        fileInput.value = "";
+      });
+
+      // 초기화
+      updateDisplay1();
+    </script>
+  </body>
+</html>
