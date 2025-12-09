@@ -1,0 +1,14 @@
+[project]
+name = "calc-service"
+version = "0.1.0"
+description = "수식 계산 및 Recall 서비스"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "easyocr>=1.7.2",
+    "fastapi>=0.124.0",
+    "python-multipart>=0.0.20",
+    "simpleeval>=1.0.3",
+    "sqlmodel>=0.0.27",
+    "uvicorn>=0.38.0",
+]
